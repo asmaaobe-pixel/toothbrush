@@ -363,8 +363,8 @@
         text.append(title, meta);
         button.append(img, text);
         button.addEventListener("click", () => {
-          box.querySelectorAll(".yt-pick").forEach((el) => el.classList.toggle("selected", el === button));
           document.getElementById("youtube").value = "https://www.youtube.com/watch?v=" + item.id;
+          box.textContent = "";
           document.getElementById("saved").textContent = "Video chosen. Click Save.";
         });
         box.appendChild(button);
