@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Brush time — 2 minutes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800&family=Fredoka:wght@500;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #24356b;
+      --muted: #5c6b99;
+      --bg: #c9ecff;
+      --card: #ffffff;
+      --line: rgba(36, 53, 107, 0.14);
+      --mint: #1fbf73;
+      --mint-deep: #149a5c;
+      --foam: #f4fbff;
+      --gold: #7c5cff;
+      --sun: #ffc24a;
+      --coral: #ff7a59;
+      --navy: #24356b;
+      --sky: #7ecbff;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(420px 220px at 8% 8%, rgba(255, 255, 255, 0.95), transparent 70%),
+        radial-gradient(380px 200px at 92% 4%, rgba(255, 255, 255, 0.8), transparent 72%),
+        radial-gradient(280px 180px at 78% 18%, rgba(255, 194, 74, 0.55), transparent 70%),
+        radial-gradient(900px 480px at 50% -10%, #9ad8ff, transparent 60%),
+        var(--bg);
+      font-family: "Nunito", "Cairo", "Trebuchet MS", sans-serif;
+      font-weight: 600;
+    }
+    .bubbles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .bubbles span {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.45);
+      border: 3px solid rgba(255, 255, 255, 0.7);
+    }
+    .bubbles .b1 { width: 70px; height: 70px; left: 6%; bottom: 12%; }
+    .bubbles .b2 { width: 36px; height: 36px; left: 14%; top: 22%; background: rgba(255, 194, 74, 0.45); border-color: transparent; }
+    .bubbles .b3 { width: 110px; height: 110px; right: 4%; bottom: 8%; }
+    .bubbles .b4 { width: 28px; height: 28px; right: 18%; top: 30%; background: rgba(124, 92, 255, 0.28); border-color: transparent; }
+    .bubbles .b5 { width: 48px; height: 48px; left: 42%; bottom: 6%; background: rgba(31, 191, 115, 0.25); border-color: transparent; }
+    .wrap {
+      position: relative;
+      z-index: 1;
+      width: min(920px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+    .mascot {
+      width: 74px;
+      height: 74px;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 6px 0 rgba(36, 53, 107, 0.08));
+    }
+    .logo {
+      display: none;
+      height: 74px;
+      width: auto;
+      max-width: 180px;
+      object-fit: contain;
+      flex: 0 0 auto;
+      background: #fff;
+      border-radius: 18px;
+      padding: 6px;
+    }
+    .logo.visible { display: block; }
+    header:has(.logo.visible) .mascot { display: none; }
+    h1 {
+      margin: 0 0 4px;
+      font-family: "Fredoka", "Cairo", "Nunito", sans-serif;
+      font-size: clamp(32px, 5vw, 46px);
+      letter-spacing: -0.02em;
+      font-weight: 700;
+      line-height: 1.05;
+    }
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.45;
+    }
+    .stage {
+      position: relative;
+      margin-top: 18px;
+      aspect-ratio: 16 / 9;
+      border-radius: 32px;
+      overflow: hidden;
+      background: var(--sky);
+      border: 6px solid #fff;
+      box-shadow: 0 10px 0 rgba(36, 53, 107, 0.12), 0 22px 40px rgba(36, 90, 150, 0.18);
+    }
+    canvas, video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: var(--navy);
+    }
+    video { display: none; }
+    .stage.has-video canvas { display: none; }
+    .stage.has-video video { display: block; }
+    .stage.has-video .badge,
+    .stage.has-video .clock-overlay { display: none; }
+    #yt-slot {
+      display: none;
+      width: min(240px, 100%);
+      margin-top: 8px;
+      aspect-ratio: 16 / 9;
+      border-radius: 8px;
+      overflow: hidden;
+      background: transparent;
+      border: 1px solid var(--line);
+    }
+    #yt-slot.visible { display: block; }
+    #yt-slot iframe { width: 100%; height: 100%; border: 0; }
+    .badge {
+      position: absolute;
+      top: 14px;
+      inset-inline-start: 14px;
+      z-index: 2;
+      pointer-events: none;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: #fff;
+      color: var(--ink);
+      border: 3px solid #fff;
+      box-shadow: 0 4px 0 rgba(36, 53, 107, 0.12);
+      font-family: "Fredoka", "Cairo", sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .badge.live { color: var(--mint-deep); }
+    .clock-overlay {
+      position: absolute;
+      inset-inline-end: 14px;
+      bottom: 14px;
+      z-index: 2;
+      pointer-events: none;
+      font-family: "Fredoka", "Cairo", sans-serif;
+      font-variant-numeric: tabular-nums;
+      font-size: 22px;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 999px;
+      color: var(--ink);
+      background: #fff;
+      box-shadow: 0 4px 0 rgba(36, 53, 107, 0.12);
+    }
+    .deck {
+      margin-top: 18px;
+      padding: 20px 20px 16px;
+      background: var(--card);
+      border: 4px solid #fff;
+      border-radius: 28px;
+      box-shadow: 0 10px 0 rgba(36, 53, 107, 0.08), 0 18px 36px rgba(36, 90, 150, 0.12);
+    }
+    .count {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .count-left { display: flex; align-items: baseline; gap: 10px; }
+    h1, .lead, .badge, .caption, button, .count-label, .count-elapsed, summary {
+      unicode-bidi: isolate;
+    }
+    .count-num {
+      direction: ltr;
+      unicode-bidi: isolate;
+      font-family: "Fredoka", "Cairo", sans-serif;
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(42px, 8vw, 64px);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      color: var(--coral);
+    }
+    .count-label, .count-elapsed {
+      color: var(--muted);
+      font-size: 16px;
+    }
+    .count-elapsed { font-variant-numeric: tabular-nums; font-weight: 800; }
+    .bar {
+      height: 22px;
+      margin: 14px 0 16px;
+      border-radius: 999px;
+      background: #d4ebff;
+      border: 3px solid #eef7ff;
+      box-shadow: inset 0 2px 0 rgba(36, 53, 107, 0.06);
+      overflow: hidden;
+    }
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--mint), var(--sun));
+    }
+    .caption {
+      margin: 0;
+      min-height: 3.2em;
+      padding: 4px 4px 16px;
+      border-bottom: 3px dashed rgba(36, 53, 107, 0.12);
+      color: var(--ink);
+      font-size: 20px;
+      line-height: 1.45;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 14px;
+      padding: 16px 0 6px;
+    }
+    .controls, .langs {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    button, .file {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      font-family: "Fredoka", "Cairo", "Nunito", sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .controls button, .langs button, .youtube button, #clear-media {
+      min-height: 48px;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: #f3f8ff;
+      box-shadow: 0 4px 0 rgba(36, 53, 107, 0.12);
+    }
+    .controls button:active, .langs button:active, button.primary:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 rgba(36, 53, 107, 0.12);
+    }
+    button.primary {
+      background: var(--mint);
+      color: #ffffff;
+      box-shadow: 0 4px 0 var(--mint-deep);
+      padding-inline: 26px;
+    }
+    button.active {
+      background: var(--sun);
+      color: var(--ink);
+      box-shadow: 0 4px 0 #e0a42a;
+    }
+    button:disabled { opacity: 0.45; cursor: default; }
+    label.vol {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-inline-start: auto;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 800;
+    }
+    @media (max-width: 640px) {
+      .lead { font-size: 16px; }
+      label.vol { margin-inline-start: 0; width: 100%; }
+      .caption { font-size: 18px; }
+    }
+    .youtube {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .youtube #yt-slot { grid-column: 1 / -1; margin-top: 8px; }
+    .youtube input {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--foam);
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font: inherit;
+      font-size: 14px;
+    }
+    .youtube button {
+      border-radius: 999px;
+      padding: 9px 16px;
+      background: #fff;
+    }
+    .youtube a {
+      color: var(--gold);
+      font-size: 13px;
+      text-decoration: none;
+    }
+    .youtube a:hover { text-decoration: underline; }
+    .grownups {
+      margin-top: 8px;
+      color: var(--muted);
+    }
+    .grownups summary {
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--gold);
+      padding: 8px 2px;
+    }
+    .attach {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 3px dashed rgba(36, 53, 107, 0.12);
+    }
+    .file { color: var(--muted); font-size: 15px; font-weight: 800; }
+    .file input { display: none; }
+    #clear-media { color: var(--ink); font-size: 15px; }
+    .foot {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 6px 16px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .admin-link { color: var(--muted); text-decoration: none; font-weight: 800; }
+    .admin-link:hover { color: var(--gold); }
+    input[type="range"] { accent-color: var(--mint); width: 128px; height: 28px; }
+  </style>
+</head>
+<body>
+  <div class="bubbles" aria-hidden="true">
+    <span class="b1"></span>
+    <span class="b2"></span>
+    <span class="b3"></span>
+    <span class="b4"></span>
+    <span class="b5"></span>
+  </div>
+  <main class="wrap">
+    <header>
+      <svg class="mascot" viewBox="0 0 80 80" aria-hidden="true">
+        <rect x="18" y="16" width="14" height="40" rx="7" fill="#fff" stroke="#24356b" stroke-width="3"/>
+        <rect x="33" y="10" width="14" height="46" rx="7" fill="#fff" stroke="#24356b" stroke-width="3"/>
+        <rect x="48" y="16" width="14" height="40" rx="7" fill="#fff" stroke="#24356b" stroke-width="3"/>
+        <circle cx="26" cy="32" r="2" fill="#24356b"/>
+        <circle cx="40" cy="28" r="2" fill="#24356b"/>
+        <path d="M34 36 q6 6 12 0" fill="none" stroke="#24356b" stroke-width="2" stroke-linecap="round"/>
+        <rect x="8" y="50" width="64" height="16" rx="8" fill="#ff9bb5"/>
+      </svg>
+      <img id="logo" class="logo" alt="" />
+      <div>
+        <h1>Brush time!</h1>
+        <p class="lead">Press the green Play button. A friendly voice helps you brush until the timer ends.</p>
+      </div>
+    </header>
+
+    <section class="stage" id="stage">
+      <canvas id="film" width="1280" height="720"></canvas>
+      <video id="video" playsinline preload="auto" controls></video>
+      <div class="badge" id="badge">Ready!</div>
+      <div class="clock-overlay" id="clock" dir="ltr">0:00 / 2:00</div>
+    </section>
+
+    <section class="deck">
+      <div class="count" id="count" aria-live="polite">
+        <div class="count-left">
+          <span class="count-num" id="count-left">2:00</span>
+          <span class="count-label" id="count-label">time left</span>
+        </div>
+        <span class="count-elapsed"><bdi id="count-elapsed" dir="ltr">0:00</bdi> <span id="elapsed-word">elapsed</span></span>
+      </div>
+      <div class="bar" aria-hidden="true"><span id="fill"></span></div>
+      <p class="caption" id="caption">Press Play. A friendly voice will help you brush.</p>
+
+      <div class="toolbar">
+        <div class="controls">
+          <button class="primary" id="play" type="button">Play</button>
+          <button id="pause" type="button">Pause</button>
+          <button id="restart" type="button">Restart</button>
+        </div>
+        <div class="langs">
+          <button id="lang-en" class="active" type="button">English</button>
+          <button id="lang-ar" type="button">عربي</button>
+        </div>
+        <label class="vol"><span id="sound-label">Sound</span>
+          <input id="volume" type="range" min="0" max="1" step="0.05" value="1" />
+        </label>
+      </div>
+
+      <details class="grownups">
+        <summary id="grownups-label">For grown-ups</summary>
+      <div class="youtube">
+        <input id="youtube-url" type="url" placeholder="Paste a YouTube link" autocomplete="off" />
+        <button id="youtube-use" type="button">Add below</button>
+        <a id="youtube-find" href="https://www.youtube.com/results?search_query=how+to+brush+teeth" target="_blank" rel="noopener">Find on YouTube</a>
+        <div id="yt-slot"></div>
+      </div>
+
+      <div class="attach">
+        <label class="file">Attach video
+          <input id="video-file" type="file" accept="video/*" />
+        </label>
+        <label class="file">Attach sound
+          <input id="audio-file" type="file" accept="audio/*" />
+        </label>
+        <button id="clear-media" type="button">Use built-in film</button>
+      </div>
+
+      <p class="foot">
+        <span class="files" id="files">Built-in film. Built-in toothbrush voice.</span>
+        <span class="status" id="status">Ready. Length is 2:00.</span>
+        <a class="admin-link" href="admin.html">Admin</a>
+      </p>
+      </details>
+    </section>
+  </main>
+
+  <audio id="voice" preload="auto"></audio>
+
+  <script>
+    let DURATION = 120;
+    let baseDuration = 120;
+    const stage = document.getElementById("stage");
+    const canvas = document.getElementById("film");
+    const ctx = canvas.getContext("2d");
+    const video = document.getElementById("video");
+    const voice = document.getElementById("voice");
+    const caption = document.getElementById("caption");
+    const clock = document.getElementById("clock");
+    const fill = document.getElementById("fill");
+    const badge = document.getElementById("badge");
+    const status = document.getElementById("status");
+    const files = document.getElementById("files");
+    const playBtn = document.getElementById("play");
+    const pauseBtn = document.getElementById("pause");
+    const volume = document.getElementById("volume");
+
+    let LINES = {
+      en: [
+        "Welcome. This two minute film shows how to use a toothbrush.",
+        "Hold the handle the way you hold a pen. A soft brush is kinder to your gums than a hard one.",
+        "Put a small pea of toothpaste on the bristles. You do not need a long strip.",
+        "Start on the outside of your upper teeth. Tilt the brush so the bristles point toward the gum.",
+        "Make small circles. Let the brush do the work. Pressing hard does not clean better.",
+        "Move from the back tooth on one side, across the front, to the other side. Give each area a few seconds.",
+        "Now the inside of the upper teeth. Use the tip of the brush, and keep the same small circles.",
+        "Lower teeth next. Outside first, then inside. The same angle, the same light touch.",
+        "Turn the brush flat on the chewing surfaces. Short strokes, back and forth, on the back teeth.",
+        "Sweep the tongue once, from the back toward the front.",
+        "Two minutes is the full time. If you finish early, go over the teeth again until the time ends.",
+        "Spit the toothpaste out. A light rinse is enough.",
+        "Rinse the toothbrush, stand it upright, and let it dry. Replace it about every three months.",
+        "Same brush, same two minutes, morning and night."
+      ],
+      ar: [
+        "أهلاً. هذا الفيلم مدته دقيقتان، ويشرح كيف تستخدم فرشاة الأسنان.",
+        "أمسك المقبض كما تمسك القلم. الفرشاة الناعمة ألطف على اللثة من الفرشاة القاسية.",
+        "ضع كمية صغيرة من المعجون، بحجم حبة البازلاء. لا حاجة لخط طويل.",
+        "ابدأ بالجهة الخارجية للأسنان العلوية. أمل الفرشاة بحيث تتجه الشعيرات نحو اللثة.",
+        "حرّك الفرشاة بدوائر صغيرة. لا تضغط بقوة. الضغط الشديد لا ينظف أكثر.",
+        "انتقل من الأسنان الخلفية في جهة، إلى الأمامية، ثم إلى الجهة الأخرى. امنح كل منطقة بضع ثوانٍ.",
+        "الآن الجهة الداخلية للأسنان العلوية. استخدم طرف الفرشاة، وبنفس الدوائر الصغيرة.",
+        "ثم الأسنان السفلية. الخارج أولاً، ثم الداخل. نفس الزاوية، ونفس اللمس الخفيف.",
+        "اجعل الفرشاة مسطحة على سطوح المضغ. حركات قصيرة ذهاباً وإياباً على الأسنان الخلفية.",
+        "امرر الفرشاة على اللسان مرة واحدة، من الخلف إلى الأمام.",
+        "الدقيقتان هما الوقت الكامل. إذا انتهيت مبكراً، أعد المرور على الأسنان حتى ينتهي الوقت.",
+        "ابصق المعجون. مضمضة خفيفة كافية.",
+        "اشطف الفرشاة، وأوقفها قائمة لتجف. استبدلها كل ثلاثة أشهر تقريباً.",
+        "نفس الفرشاة، ونفس الدقيقتان، صباحاً ومساءً."
+      ]
+    };
+
+    let lang = "en";
+    let elapsed = 0;
+    let playing = false;
+    let lastTick = 0;
+    let lineIndex = 0;
+    let usingAudioFile = false;
+    let usingVideoFile = false;
+    let usingYouTube = false;
+    let youtubeVideoId = "";
+    let ytPlayer = null;
+    let ytApiPromise = null;
+    let videoUrl = "";
+    let audioUrl = "";
+    let raf = 0;
+    let keepAlive = 0;
+
+    function fmt(seconds) {
+      const s = Math.min(DURATION, Math.max(0, Math.floor(seconds)));
+      const m = Math.floor(s / 60);
+      const r = String(s % 60).padStart(2, "0");
+      return m + ":" + r;
+    }
+
+    function currentLine() {
+      const lines = LINES[lang];
+      const slot = DURATION / lines.length;
+      const index = Math.min(lines.length - 1, Math.floor(elapsed / slot));
+      return lines[index];
+    }
+
+    const UI = {
+      en: {
+        title: "Brush time!",
+        lead: "Press the green Play button. A friendly voice helps you brush until the timer ends.",
+        timeLeft: "time left",
+        elapsed: "elapsed",
+        play: "Play",
+        pause: "Pause",
+        restart: "Restart",
+        sound: "Sound",
+        grownups: "For grown-ups",
+        ready: "Ready!",
+        brushing: "Brushing!",
+        done: "All done!",
+        keep: "Keep brushing!",
+        paused: "Paused. Press Play to keep going.",
+        finished: "All done! You brushed for ",
+        readyStatus: "Ready! Brush for ",
+        restartNote: "Back at the start. Press Play."
+      },
+      ar: {
+        title: "وقت التفريش!",
+        lead: "اضغط زر ابدأ الأخضر. صوت لطيف يساعدك حتى ينتهي المؤقت.",
+        timeLeft: "الوقت المتبقي",
+        elapsed: "مضى",
+        play: "ابدأ",
+        pause: "توقف",
+        restart: "من جديد",
+        sound: "الصوت",
+        grownups: "للكبار",
+        ready: "جاهز!",
+        brushing: "نفرش!",
+        done: "أحسنت!",
+        keep: "استمر بالتفريش!",
+        paused: "توقف مؤقت. اضغط ابدأ للمتابعة.",
+        finished: "أحسنت! فرشت لمدة ",
+        readyStatus: "جاهز! فرش لمدة ",
+        restartNote: "رجعنا للبداية. اضغط ابدأ."
+      }
+    };
+
+    function ui() {
+      return UI[lang] || UI.en;
+    }
+
+    function applyChrome() {
+      const copy = ui();
+      const h1 = document.querySelector("h1");
+      const lead = document.querySelector(".lead");
+      if (!h1.dataset.custom) {
+        h1.textContent = copy.title;
+        document.title = copy.title;
+      }
+      if (!lead.dataset.custom) lead.textContent = copy.lead;
+      document.getElementById("count-label").textContent = copy.timeLeft;
+      document.getElementById("elapsed-word").textContent = copy.elapsed;
+      document.getElementById("play").textContent = copy.play;
+      document.getElementById("pause").textContent = copy.pause;
+      document.getElementById("restart").textContent = copy.restart;
+      document.getElementById("sound-label").textContent = copy.sound;
+      document.getElementById("grownups-label").textContent = copy.grownups;
+    }
+
+    function renderHud() {
+      const left = Math.max(0, DURATION - elapsed);
+      const copy = ui();
+      clock.textContent = fmt(elapsed) + " / " + fmt(DURATION);
+      document.getElementById("count-left").textContent = fmt(left);
+      document.getElementById("count-elapsed").textContent = fmt(elapsed);
+      fill.style.width = (elapsed / DURATION) * 100 + "%";
+      if (!usingAudioFile) caption.textContent = currentLine();
+      badge.textContent = playing ? copy.brushing : (elapsed >= DURATION ? copy.done : copy.ready);
+      badge.classList.toggle("live", playing);
+    }
+
+    function pickVoice() {
+      const voices = speechSynthesis.getVoices();
+      const prefix = lang === "ar" ? "ar" : "en";
+      return (
+        voices.find((v) => v.lang.toLowerCase().startsWith(prefix)) ||
+        voices.find((v) => v.lang.toLowerCase().startsWith("en")) ||
+        voices[0] ||
+        null
+      );
+    }
+
+    function stopSpeech() {
+      speechSynthesis.cancel();
+    }
+
+    function speakFrom(index) {
+      if (usingAudioFile) return;
+      stopSpeech();
+      const lines = LINES[lang].slice(index);
+      const voiceName = pickVoice();
+      lines.forEach((text) => {
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = lang === "ar" ? "ar" : "en-US";
+        utter.rate = 0.92;
+        utter.volume = Number(volume.value);
+        if (voiceName) utter.voice = voiceName;
+        speechSynthesis.speak(utter);
+      });
+    }
+
+    function drawTooth(x, y, w, h, smile) {
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, 26);
+      ctx.fill();
+      ctx.strokeStyle = "#d5ecff";
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      if (!smile) return;
+      ctx.fillStyle = "#24356b";
+      ctx.beginPath();
+      ctx.arc(x + w * 0.32, y + h * 0.36, 5, 0, Math.PI * 2);
+      ctx.arc(x + w * 0.68, y + h * 0.36, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#24356b";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(x + w / 2, y + h * 0.46, 14, 0.15, Math.PI - 0.15);
+      ctx.stroke();
+    }
+
+    function drawCloud(cx, cy, r) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.arc(cx + r * 0.85, cy + 8, r * 0.72, 0, Math.PI * 2);
+      ctx.arc(cx - r * 0.75, cy + 10, r * 0.62, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function draw() {
+      const w = canvas.width;
+      const h = canvas.height;
+      const sky = ctx.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, "#79c8ff");
+      sky.addColorStop(1, "#e8f8ff");
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.fillStyle = "#ffe08a";
+      ctx.beginPath();
+      ctx.arc(w - 130, 110, 54, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+      drawCloud(460, 78, 36);
+      drawCloud(720, 130, 32);
+      drawCloud(980, 86, 48);
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+      ctx.lineWidth = 4;
+      for (let i = 0; i < 7; i++) {
+        const rise = (elapsed * 28 + i * 90) % (h * 0.7);
+        const bx = 80 + i * 170;
+        ctx.beginPath();
+        ctx.arc(bx, h - 30 - rise, 12 + (i % 3) * 6, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      const teeth = 8;
+      const tw = 78;
+      const gap = 14;
+      const total = teeth * tw + (teeth - 1) * gap;
+      const startX = (w - total) / 2;
+      const baseY = h * 0.48;
+      ctx.fillStyle = "#ffb4c8";
+      ctx.beginPath();
+      ctx.roundRect(startX - 16, baseY + 36, total + 32, 78, 36);
+      ctx.fill();
+      for (let i = 0; i < teeth; i++) {
+        drawTooth(startX + i * (tw + gap), baseY, tw, 158, i === 2 || i === 4 || i === 5);
+      }
+
+      const travel = (elapsed % 24) / 24;
+      const x = startX + travel * (total - 180);
+      const wobble = Math.sin(elapsed * 7) * 12;
+      const brushY = baseY - 78 + wobble;
+      const handle = getComputedStyle(document.documentElement).getPropertyValue("--mint").trim() || "#1fbf73";
+      const neck = getComputedStyle(document.documentElement).getPropertyValue("--gold").trim() || "#7c5cff";
+
+      ctx.save();
+      ctx.translate(x + 70, brushY);
+      ctx.rotate(-0.45);
+      ctx.fillStyle = handle;
+      ctx.beginPath();
+      ctx.roundRect(0, -6, 230, 40, 20);
+      ctx.fill();
+      ctx.fillStyle = neck;
+      ctx.beginPath();
+      ctx.roundRect(-18, 0, 48, 28, 10);
+      ctx.fill();
+      ctx.fillStyle = "#f7fffb";
+      for (let i = 0; i < 8; i++) ctx.fillRect(-14 + i * 5, 28, 3, 22);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+      ctx.beginPath();
+      ctx.ellipse(150, 8, 36, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      if (elapsed >= DURATION) {
+        ctx.fillStyle = "#ff7a59";
+        ctx.font = "700 42px Fredoka, Cairo, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(lang === "ar" ? "أحسنت!" : "You did it!", w / 2, 150);
+        ctx.textAlign = "start";
+      }
+    }
+
+    function youtubeIdFrom(input) {
+      const text = (input || "").trim();
+      if (/^[\w-]{11}$/.test(text)) return text;
+      let url;
+      try { url = new URL(text); } catch (e) { return ""; }
+      const host = url.hostname.replace(/^www\./, "");
+      if (host === "youtu.be") {
+        const id = (url.pathname.split("/").filter(Boolean)[0] || "").slice(0, 11);
+        return /^[\w-]{11}$/.test(id) ? id : "";
+      }
+      if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com" || host === "youtube-nocookie.com") {
+        const fromQuery = url.searchParams.get("v") || "";
+        if (/^[\w-]{11}$/.test(fromQuery)) return fromQuery;
+        const parts = url.pathname.split("/").filter(Boolean);
+        const key = parts.findIndex((part) => ["embed", "shorts", "live", "v"].includes(part));
+        const id = key >= 0 ? (parts[key + 1] || "").slice(0, 11) : "";
+        return /^[\w-]{11}$/.test(id) ? id : "";
+      }
+      return "";
+    }
+
+    function ensureYouTubeAPI() {
+      if (window.YT && window.YT.Player) return Promise.resolve();
+      if (ytApiPromise) return ytApiPromise;
+      ytApiPromise = new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error("timeout")), 12000);
+        window.onYouTubeIframeAPIReady = () => {
+          clearTimeout(timer);
+          resolve();
+        };
+        const script = document.createElement("script");
+        script.src = "https://www.youtube.com/iframe_api";
+        script.onerror = () => {
+          clearTimeout(timer);
+          reject(new Error("script"));
+        };
+        document.head.appendChild(script);
+      });
+      return ytApiPromise;
+    }
+
+    function silenceYouTube(player) {
+      const target = player || ytPlayer;
+      if (!target || !target.mute) return;
+      target.mute();
+    }
+
+    function hideYouTube() {
+      usingYouTube = false;
+      document.getElementById("yt-slot").classList.remove("visible");
+      if (ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+    }
+
+    function syncMedia() {
+      if (usingAudioFile && voice.duration) {
+        const target = Math.min(elapsed, Math.max(0, voice.duration - 0.05));
+        if (Math.abs(voice.currentTime - target) > 0.35) voice.currentTime = target;
+        voice.volume = Number(volume.value);
+      }
+    }
+
+    function frame(now) {
+      if (!playing) return;
+      if (!lastTick) lastTick = now;
+      const dt = Math.min(0.05, (now - lastTick) / 1000);
+      lastTick = now;
+      elapsed += dt;
+      if (!usingVideoFile) draw();
+      syncMedia();
+      renderHud();
+      if (elapsed >= DURATION) {
+        finish();
+        return;
+      }
+      raf = requestAnimationFrame(frame);
+    }
+
+    function finish() {
+      playing = false;
+      elapsed = DURATION;
+      cancelAnimationFrame(raf);
+      clearInterval(keepAlive);
+      voice.pause();
+      stopSpeech();
+      renderHud();
+      status.textContent = usingYouTube || usingVideoFile
+        ? ui().done + " Your video was left as it is."
+        : ui().finished + fmt(DURATION) + ".";
+    }
+
+    function play() {
+      if (elapsed >= DURATION) elapsed = 0;
+      playing = true;
+      lastTick = 0;
+      status.textContent = usingYouTube
+        ? ui().keep + " The YouTube video stays quiet."
+        : (usingVideoFile ? ui().keep + " Your video keeps its own picture and sound." : ui().keep);
+      renderHud();
+
+      if (usingYouTube) silenceYouTube();
+      if (usingVideoFile) video.muted = false;
+      else draw();
+
+      if (usingAudioFile) {
+        stopSpeech();
+        voice.currentTime = Math.min(elapsed, voice.duration || elapsed);
+        voice.volume = Number(volume.value);
+        voice.play().catch(() => {
+          status.textContent = "The sound file could not play. Press play again.";
+        });
+      } else {
+        const lines = LINES[lang];
+        const slot = DURATION / lines.length;
+        lineIndex = Math.min(lines.length - 1, Math.floor(elapsed / slot));
+        speakFrom(lineIndex);
+        clearInterval(keepAlive);
+        keepAlive = setInterval(() => {
+          if (playing && speechSynthesis.speaking) {
+            speechSynthesis.pause();
+            speechSynthesis.resume();
+          }
+        }, 10000);
+      }
+
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(frame);
+    }
+
+    function pause() {
+      playing = false;
+      cancelAnimationFrame(raf);
+      clearInterval(keepAlive);
+      lastTick = 0;
+      voice.pause();
+      stopSpeech();
+      renderHud();
+      status.textContent = ui().paused;
+    }
+
+    function restart() {
+      pause();
+      elapsed = 0;
+      if (usingAudioFile) voice.currentTime = 0;
+      renderHud();
+      if (!usingVideoFile) draw();
+      status.textContent = ui().restartNote;
+    }
+
+    function describeFiles() {
+      const v = usingVideoFile ? "Your video is attached." : "Built-in film.";
+      const y = usingYouTube ? " YouTube is under the link." : "";
+      const a = usingAudioFile ? " Your sound is attached." : " Built-in toothbrush voice.";
+      files.textContent = v + y + a;
+    }
+
+    playBtn.addEventListener("click", play);
+    pauseBtn.addEventListener("click", pause);
+    document.getElementById("restart").addEventListener("click", restart);
+
+    document.getElementById("lang-en").addEventListener("click", () => setLang("en"));
+    document.getElementById("lang-ar").addEventListener("click", () => setLang("ar"));
+
+    function setLang(next) {
+      lang = next;
+      document.getElementById("lang-en").classList.toggle("active", lang === "en");
+      document.getElementById("lang-ar").classList.toggle("active", lang === "ar");
+      document.documentElement.lang = lang === "ar" ? "ar" : "en";
+      document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+      applyChrome();
+      renderHud();
+      if (!playing && elapsed === 0) status.textContent = ui().readyStatus + fmt(DURATION) + ".";
+      else if (!playing) status.textContent = ui().paused;
+      else if (!usingYouTube && !usingVideoFile) status.textContent = ui().keep;
+      if (!usingVideoFile) draw();
+      if (playing && !usingAudioFile) {
+        const lines = LINES[lang];
+        const slot = DURATION / lines.length;
+        speakFrom(Math.min(lines.length - 1, Math.floor(elapsed / slot)));
+      }
+    }
+
+    volume.addEventListener("input", () => {
+      voice.volume = Number(volume.value);
+    });
+
+    async function useYouTube() {
+      const id = youtubeIdFrom(document.getElementById("youtube-url").value);
+      if (!id) {
+        status.textContent = "Paste a YouTube link, like https://www.youtube.com/watch?v=...";
+        return;
+      }
+      status.textContent = "Loading the YouTube video…";
+      try {
+        await ensureYouTubeAPI();
+      } catch (e) {
+        status.textContent = "YouTube could not load. Check your internet connection and try again.";
+        return;
+      }
+      usingYouTube = true;
+      youtubeVideoId = id;
+      const slot = document.getElementById("yt-slot");
+      slot.classList.add("visible");
+      if (!ytPlayer) {
+        const holder = document.createElement("div");
+        holder.id = "yt-player";
+        slot.appendChild(holder);
+        ytPlayer = new YT.Player("yt-player", {
+          videoId: id,
+          playerVars: {
+            rel: 0,
+            autoplay: 0,
+            modestbranding: 1,
+            playsinline: 1,
+            controls: 1,
+            origin: location.origin
+          },
+          events: {
+            onReady: (event) => {
+              const mark = () => {
+                silenceYouTube(event.target);
+                const slot = document.getElementById("yt-slot");
+                if (slot) slot.dataset.muted = String(!!(event.target.isMuted && event.target.isMuted()));
+              };
+              mark();
+              setTimeout(mark, 400);
+              const takeTime = () => {
+                if (!usingVideoFile) applyVideoDuration(event.target.getDuration());
+              };
+              takeTime();
+              setTimeout(takeTime, 600);
+              describeFiles();
+              renderHud();
+              status.textContent = "YouTube is under the link with its sound off. Press Play for the voice.";
+            },
+            onStateChange: (event) => {
+              if (event.data === YT.PlayerState.PLAYING) {
+                silenceYouTube(event.target);
+                document.getElementById("yt-slot").dataset.muted = String(event.target.isMuted && event.target.isMuted());
+                if (!usingVideoFile) applyVideoDuration(event.target.getDuration());
+              }
+            },
+            onError: () => {
+              status.textContent = "YouTube could not play that video. Try another link.";
+            }
+          }
+        });
+      } else {
+        ytPlayer.cueVideoById(id);
+        silenceYouTube();
+        setTimeout(() => {
+          if (!usingVideoFile && ytPlayer.getDuration) applyVideoDuration(ytPlayer.getDuration());
+        }, 800);
+        describeFiles();
+        renderHud();
+        status.textContent = "YouTube is under the link with its sound off. Press Play for the voice.";
+      }
+    }
+
+    document.getElementById("youtube-use").addEventListener("click", useYouTube);
+    document.getElementById("youtube-url").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        useYouTube();
+      }
+    });
+
+    document.getElementById("video-file").addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
+      videoUrl = URL.createObjectURL(file);
+      video.src = videoUrl;
+      usingVideoFile = true;
+      stage.classList.add("has-video");
+      video.muted = false;
+      describeFiles();
+      status.textContent = "Video attached: " + file.name + ". The timer will match this video.";
+    });
+
+    function applyVideoDuration(seconds) {
+      if (!Number.isFinite(seconds) || seconds < 1) return;
+      const next = Math.min(3600, Math.round(seconds));
+      if (next === DURATION) return;
+      DURATION = next;
+      if (!playing) elapsed = 0;
+      if (elapsed > DURATION) elapsed = DURATION;
+      renderHud();
+      status.textContent = "Timer follows the video: " + fmt(DURATION) + ".";
+    }
+
+    video.addEventListener("loadedmetadata", () => {
+      if (usingVideoFile) applyVideoDuration(video.duration);
+    });
+
+    document.getElementById("audio-file").addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+      audioUrl = URL.createObjectURL(file);
+      voice.src = audioUrl;
+      usingAudioFile = true;
+      stopSpeech();
+      describeFiles();
+      caption.textContent = "Your sound will play with the video for " + fmt(DURATION) + ".";
+      status.textContent = "Sound attached: " + file.name + ". Press play.";
+    });
+
+    document.getElementById("clear-media").addEventListener("click", () => {
+      pause();
+      elapsed = 0;
+      usingVideoFile = false;
+      usingAudioFile = false;
+      hideYouTube();
+      youtubeVideoId = "";
+      document.getElementById("youtube-url").value = "";
+      video.removeAttribute("src");
+      voice.removeAttribute("src");
+      video.load();
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+      videoUrl = "";
+      audioUrl = "";
+      stage.classList.remove("has-video");
+      document.getElementById("video-file").value = "";
+      document.getElementById("audio-file").value = "";
+      DURATION = baseDuration;
+      describeFiles();
+      renderHud();
+      draw();
+      status.textContent = "Using the built-in film. Timer is " + fmt(DURATION) + ".";
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.code !== "Space" || event.target.matches("input, button")) return;
+      event.preventDefault();
+      playing ? pause() : play();
+    });
+
+    function savedSettings() {
+      try { return JSON.parse(localStorage.getItem("healthy-tooth-settings")) || {}; }
+      catch (e) { return {}; }
+    }
+
+    function linesFrom(text, fallback) {
+      const rows = String(text || "").split(/\n+/).map((line) => line.trim()).filter(Boolean);
+      return rows.length ? rows : fallback;
+    }
+
+    function applyAdminSettings() {
+      const saved = savedSettings();
+      const minutes = Number(saved.minutes);
+      const seconds = Number(saved.seconds);
+      if (saved.minutes !== undefined || saved.seconds !== undefined) {
+        const total = (Number.isFinite(minutes) ? minutes : 0) * 60 + (Number.isFinite(seconds) ? seconds : 0);
+        if (total >= 15) DURATION = baseDuration = Math.min(3600, total);
+      }
+      LINES.en = linesFrom(saved.english, LINES.en);
+      LINES.ar = linesFrom(saved.arabic, LINES.ar);
+      if (saved.title) {
+        const h1 = document.querySelector("h1");
+        h1.textContent = saved.title;
+        document.title = saved.title;
+        if (saved.title !== UI.en.title) h1.dataset.custom = "1";
+      }
+      if (saved.lead) {
+        const lead = document.querySelector(".lead");
+        lead.textContent = saved.lead;
+        if (saved.lead !== UI.en.lead) lead.dataset.custom = "1";
+      }
+      const root = document.documentElement;
+      if (saved.navy) {
+        root.style.setProperty("--ink", saved.navy);
+        root.style.setProperty("--navy", saved.navy);
+      }
+      if (saved.green) {
+        root.style.setProperty("--mint", saved.green);
+        root.style.setProperty("--mint-deep", saved.green);
+      }
+      if (saved.purple) root.style.setProperty("--gold", saved.purple);
+      if (saved.youtube) document.getElementById("youtube-url").value = saved.youtube;
+      const logo = document.getElementById("logo");
+      if (saved.logo) {
+        logo.src = saved.logo;
+        logo.alt = saved.title || "Logo";
+        logo.classList.add("visible");
+      } else {
+        logo.removeAttribute("src");
+        logo.alt = "";
+        logo.classList.remove("visible");
+      }
+      applyChrome();
+      status.textContent = ui().readyStatus + fmt(DURATION) + ".";
+    }
+
+    speechSynthesis.addEventListener?.("voiceschanged", () => {});
+    applyAdminSettings();
+    renderHud();
+    draw();
+    function filmStore(mode) {
+      return new Promise((resolve, reject) => {
+        const open = indexedDB.open("healthy-tooth", 1);
+        open.onupgradeneeded = () => {
+          if (!open.result.objectStoreNames.contains("media")) open.result.createObjectStore("media");
+        };
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          const tx = db.transaction("media", mode);
+          resolve(tx.objectStore("media"));
+        };
+      });
+    }
+
+    filmStore("readonly").then((store) => {
+      const req = store.get("film");
+      req.onsuccess = () => {
+        const blob = req.result;
+        if (!blob || usingVideoFile) return;
+        if (videoUrl) URL.revokeObjectURL(videoUrl);
+        videoUrl = URL.createObjectURL(blob);
+        video.src = videoUrl;
+        usingVideoFile = true;
+        video.muted = false;
+        stage.classList.add("has-video");
+        describeFiles();
+      };
+    }).catch(() => {});
+
+    if (document.getElementById("youtube-url").value.trim()) useYouTube();
+  </script>
+</body>
+</html>

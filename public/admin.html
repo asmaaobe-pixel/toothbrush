@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin — Healthy Tooth</title>
+  <style>
+    :root {
+      --ink: #24356b;
+      --muted: #5c6b99;
+      --bg: #e7f6ff;
+      --card: #ffffff;
+      --line: rgba(36, 53, 107, 0.14);
+      --mint: #1fbf73;
+      --gold: #7c5cff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+    .wrap { width: min(760px, calc(100% - 32px)); margin: 0 auto; padding: 36px 0 56px; }
+    h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: -0.03em; }
+    a { color: var(--gold); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .lead { margin: 0 0 18px; color: var(--muted); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 12px 32px rgba(28, 33, 88, 0.06);
+    }
+    label { display: block; margin: 14px 0 6px; font-size: 13px; color: var(--muted); }
+    input[type="text"], input[type="url"], input[type="password"], input[type="number"], textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #f7f8fc;
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+    }
+    textarea { min-height: 140px; resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .colors { display: flex; gap: 16px; flex-wrap: wrap; }
+    .colors label { display: flex; align-items: center; gap: 8px; }
+    input[type="color"] { width: 42px; height: 32px; padding: 0; border: 1px solid var(--line); background: #fff; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button.primary { background: var(--mint); color: #fff; border-color: transparent; font-weight: 650; }
+    .note { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
+    .logo-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    #logo-preview {
+      display: none;
+      height: 72px;
+      width: auto;
+      max-width: 180px;
+      object-fit: contain;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 4px;
+    }
+    #logo-preview.visible { display: block; }
+    input[type="file"] { font: inherit; font-size: 14px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Admin</h1>
+    <p class="lead">Change the watch page, then save. <a href="index.html">Back to the film</a></p>
+
+    <section class="card" id="login">
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" />
+      <div class="actions">
+        <button class="primary" id="enter" type="button">Enter</button>
+      </div>
+      <p class="note">First password is <strong>admin</strong>. You can change it after you enter.</p>
+    </section>
+
+    <form class="card hidden" id="editor">
+      <label for="title">Page title</label>
+      <input id="title" type="text" />
+
+      <label for="lead">Intro line</label>
+      <input id="lead" type="text" />
+
+      <div class="row">
+        <div>
+          <label for="minutes">Minutes</label>
+          <input id="minutes" type="number" min="0" max="180" />
+        </div>
+        <div>
+          <label for="seconds">Seconds</label>
+          <input id="seconds" type="number" min="0" max="59" />
+        </div>
+        <div>
+          <label for="new-password">New password</label>
+          <input id="new-password" type="password" placeholder="Leave blank to keep" autocomplete="new-password" />
+        </div>
+      </div>
+
+      <label for="film-file">Film video</label>
+      <div class="logo-row">
+        <input id="film-file" type="file" accept="video/*" />
+        <button id="film-remove" type="button">Remove film</button>
+      </div>
+      <p class="note" id="film-name">No film uploaded. The built-in film is used. The timer uses the video length when you add one.</p>
+
+      <label for="youtube">YouTube link</label>
+      <input id="youtube" type="url" placeholder="https://www.youtube.com/watch?v=" />
+
+      <label for="logo-file">Logo</label>
+      <div class="logo-row">
+        <img id="logo-preview" alt="Logo preview" />
+        <input id="logo-file" type="file" accept="image/*" />
+        <button id="logo-remove" type="button">Remove logo</button>
+      </div>
+
+      <label>Logo colors</label>
+      <div class="colors">
+        <label>Navy <input id="navy" type="color" value="#24356b" /></label>
+        <label>Green <input id="green" type="color" value="#1fbf73" /></label>
+        <label>Purple <input id="purple" type="color" value="#7c5cff" /></label>
+      </div>
+
+      <label for="english">English voice, one sentence per line</label>
+      <textarea id="english"></textarea>
+
+      <label for="arabic">Arabic voice, one sentence per line</label>
+      <textarea id="arabic" dir="rtl"></textarea>
+
+      <div class="actions">
+        <button class="primary" id="save" type="button">Save</button>
+        <button id="reset" type="button">Reset to original</button>
+        <a href="index.html">Open the film</a>
+      </div>
+      <p class="note" id="saved"></p>
+    </form>
+  </main>
+  <script>
+    const KEY = "healthy-tooth-settings";
+    const DEFAULTS = {
+      title: "Brush time!",
+      lead: "Press the green Play button. A friendly voice helps you brush until the timer ends.",
+      minutes: 2,
+      seconds: 0,
+      youtube: "",
+      navy: "#24356b",
+      green: "#1fbf73",
+      purple: "#7c5cff",
+      english: [
+        "Welcome. This two minute film shows how to use a toothbrush.",
+        "Hold the handle the way you hold a pen. A soft brush is kinder to your gums than a hard one.",
+        "Put a small pea of toothpaste on the bristles. You do not need a long strip.",
+        "Start on the outside of your upper teeth. Tilt the brush so the bristles point toward the gum.",
+        "Make small circles. Let the brush do the work. Pressing hard does not clean better.",
+        "Move from the back tooth on one side, across the front, to the other side. Give each area a few seconds.",
+        "Now the inside of the upper teeth. Use the tip of the brush, and keep the same small circles.",
+        "Lower teeth next. Outside first, then inside. The same angle, the same light touch.",
+        "Turn the brush flat on the chewing surfaces. Short strokes, back and forth, on the back teeth.",
+        "Sweep the tongue once, from the back toward the front.",
+        "Two minutes is the full time. If you finish early, go over the teeth again until the time ends.",
+        "Spit the toothpaste out. A light rinse is enough.",
+        "Rinse the toothbrush, stand it upright, and let it dry. Replace it about every three months.",
+        "Same brush, same two minutes, morning and night."
+      ].join("\n"),
+      arabic: [
+        "أهلاً. هذا الفيلم مدته دقيقتان، ويشرح كيف تستخدم فرشاة الأسنان.",
+        "أمسك المقبض كما تمسك القلم. الفرشاة الناعمة ألطف على اللثة من الفرشاة القاسية.",
+        "ضع كمية صغيرة من المعجون، بحجم حبة البازلاء. لا حاجة لخط طويل.",
+        "ابدأ بالجهة الخارجية للأسنان العلوية. أمل الفرشاة بحيث تتجه الشعيرات نحو اللثة.",
+        "حرّك الفرشاة بدوائر صغيرة. لا تضغط بقوة. الضغط الشديد لا ينظف أكثر.",
+        "انتقل من الأسنان الخلفية في جهة، إلى الأمامية، ثم إلى الجهة الأخرى. امنح كل منطقة بضع ثوانٍ.",
+        "الآن الجهة الداخلية للأسنان العلوية. استخدم طرف الفرشاة، وبنفس الدوائر الصغيرة.",
+        "ثم الأسنان السفلية. الخارج أولاً، ثم الداخل. نفس الزاوية، ونفس اللمس الخفيف.",
+        "اجعل الفرشاة مسطحة على سطوح المضغ. حركات قصيرة ذهاباً وإياباً على الأسنان الخلفية.",
+        "امرر الفرشاة على اللسان مرة واحدة، من الخلف إلى الأمام.",
+        "الدقيقتان هما الوقت الكامل. إذا انتهيت مبكراً، أعد المرور على الأسنان حتى ينتهي الوقت.",
+        "ابصق المعجون. مضمضة خفيفة كافية.",
+        "اشطف الفرشاة، وأوقفها قائمة لتجف. استبدلها كل ثلاثة أشهر تقريباً.",
+        "نفس الفرشاة، ونفس الدقيقتان، صباحاً ومساءً."
+      ].join("\n")
+    };
+
+    function read() {
+      try { return JSON.parse(localStorage.getItem(KEY)) || {}; }
+      catch (e) { return {}; }
+    }
+
+    let logoData = "";
+    let filmFile = null;
+    let removeFilm = false;
+
+    function filmStore(mode) {
+      return new Promise((resolve, reject) => {
+        const open = indexedDB.open("healthy-tooth", 1);
+        open.onupgradeneeded = () => {
+          if (!open.result.objectStoreNames.contains("media")) open.result.createObjectStore("media");
+        };
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => resolve(open.result.transaction("media", mode).objectStore("media"));
+      });
+    }
+
+    function putFilm(blob) {
+      return filmStore("readwrite").then((store) => new Promise((resolve, reject) => {
+        const req = store.put(blob, "film");
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      }));
+    }
+
+    function deleteFilm() {
+      return filmStore("readwrite").then((store) => new Promise((resolve, reject) => {
+        const req = store.delete("film");
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      }));
+    }
+
+    function filmLabel(name) {
+      document.getElementById("film-name").textContent = name
+        ? "Current film: " + name + ". The timer uses this video's length."
+        : "No film uploaded. The built-in film is used. The timer uses the video length when you add one.";
+    }
+
+    function showLogo(src) {
+      logoData = src || "";
+      const preview = document.getElementById("logo-preview");
+      if (logoData) {
+        preview.src = logoData;
+        preview.classList.add("visible");
+      } else {
+        preview.removeAttribute("src");
+        preview.classList.remove("visible");
+      }
+    }
+
+    function fill(data) {
+      const values = Object.assign({}, DEFAULTS, data);
+      ["title", "lead", "minutes", "seconds", "youtube", "navy", "green", "purple", "english", "arabic"].forEach((id) => {
+        document.getElementById(id).value = values[id] == null ? "" : values[id];
+      });
+      showLogo(data.logo || "");
+      document.getElementById("logo-file").value = "";
+      filmFile = null;
+      removeFilm = false;
+      document.getElementById("film-file").value = "";
+      filmLabel(data.filmName || "");
+    }
+
+    function readLogoFile(file) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        const url = URL.createObjectURL(file);
+        image.onload = () => {
+          const max = 480;
+          const scale = Math.min(1, max / image.width, max / image.height);
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(image.width * scale));
+          canvas.height = Math.max(1, Math.round(image.height * scale));
+          canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+          resolve(canvas.toDataURL("image/png"));
+        };
+        image.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("logo"));
+        };
+        image.src = url;
+      });
+    }
+
+    function showEditor() {
+      document.getElementById("login").classList.add("hidden");
+      document.getElementById("editor").classList.remove("hidden");
+      fill(read());
+    }
+
+    document.getElementById("enter").addEventListener("click", () => {
+      const saved = read();
+      const expected = saved.password || "admin";
+      if (document.getElementById("password").value !== expected) {
+        document.querySelector("#login .note").textContent = "That password is not correct.";
+        return;
+      }
+      sessionStorage.setItem("healthy-tooth-admin", "1");
+      showEditor();
+    });
+
+    document.getElementById("password").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") document.getElementById("enter").click();
+    });
+
+    document.getElementById("film-file").addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      filmFile = file;
+      removeFilm = false;
+      filmLabel(file.name);
+      const url = URL.createObjectURL(file);
+      const probe = document.createElement("video");
+      probe.preload = "metadata";
+      probe.src = url;
+      probe.onloadedmetadata = () => {
+        const total = Math.max(1, Math.round(probe.duration));
+        document.getElementById("minutes").value = Math.floor(total / 60);
+        document.getElementById("seconds").value = total % 60;
+        URL.revokeObjectURL(url);
+        document.getElementById("saved").textContent = "Timer set from the video. Click Save.";
+      };
+      probe.onerror = () => {
+        URL.revokeObjectURL(url);
+        document.getElementById("saved").textContent = "That file could not be read as a video.";
+      };
+    });
+
+    document.getElementById("film-remove").addEventListener("click", () => {
+      filmFile = null;
+      removeFilm = true;
+      document.getElementById("film-file").value = "";
+      filmLabel("");
+      document.getElementById("saved").textContent = "Film removed. Click Save. The timer can be set by hand.";
+    });
+
+    document.getElementById("save").addEventListener("click", async () => {
+      const previous = read();
+      const nextPassword = document.getElementById("new-password").value.trim();
+      const minutes = Math.max(0, Number(document.getElementById("minutes").value) || 0);
+      const seconds = Math.max(0, Math.min(59, Number(document.getElementById("seconds").value) || 0));
+      if (minutes * 60 + seconds < 15) {
+        document.getElementById("saved").textContent = "The timer must be at least 15 seconds.";
+        return;
+      }
+      const data = {
+        title: document.getElementById("title").value.trim(),
+        lead: document.getElementById("lead").value.trim(),
+        minutes: minutes,
+        seconds: seconds,
+        youtube: document.getElementById("youtube").value.trim(),
+        navy: document.getElementById("navy").value,
+        green: document.getElementById("green").value,
+        purple: document.getElementById("purple").value,
+        english: document.getElementById("english").value.trim(),
+        arabic: document.getElementById("arabic").value.trim(),
+        logo: logoData,
+        filmName: removeFilm ? "" : (filmFile ? filmFile.name : (previous.filmName || "")),
+        password: nextPassword || previous.password || "admin"
+      };
+      try {
+        if (removeFilm) await deleteFilm();
+        else if (filmFile) await putFilm(filmFile);
+      } catch (e) {
+        document.getElementById("saved").textContent = "The film could not be saved. Try a smaller video.";
+        return;
+      }
+      localStorage.setItem(KEY, JSON.stringify(data));
+      filmFile = null;
+      removeFilm = false;
+      document.getElementById("new-password").value = "";
+      document.getElementById("saved").textContent = "Saved. Open the film page to see the changes.";
+    });
+
+    document.getElementById("logo-file").addEventListener("change", async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      try {
+        showLogo(await readLogoFile(file));
+        document.getElementById("saved").textContent = "Logo ready. Click Save to put it on the film page.";
+      } catch (e) {
+        document.getElementById("saved").textContent = "That file could not be used as a logo. Choose an image.";
+      }
+    });
+
+    document.getElementById("logo-remove").addEventListener("click", () => {
+      showLogo("");
+      document.getElementById("logo-file").value = "";
+      document.getElementById("saved").textContent = "Logo removed. Click Save to update the film page.";
+    });
+
+    document.getElementById("reset").addEventListener("click", async () => {
+      const password = read().password || "admin";
+      try { await deleteFilm(); } catch (e) {}
+      localStorage.removeItem(KEY);
+      localStorage.setItem(KEY, JSON.stringify({ password: password }));
+      fill({ password: password });
+      document.getElementById("saved").textContent = "Reset to the original film. The password was kept.";
+    });
+
+    if (sessionStorage.getItem("healthy-tooth-admin") === "1") showEditor();
+  </script>
+</body>
+</html>
