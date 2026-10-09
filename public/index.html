@@ -1193,8 +1193,26 @@
         logo.alt = "";
         logo.classList.remove("visible");
       }
+      setFavicon(saved.logo || "");
       applyChrome();
       status.textContent = ui().readyStatus + fmt(DURATION) + ".";
+    }
+
+    function setFavicon(src) {
+      ["icon", "apple-touch-icon"].forEach((rel) => {
+        let link = document.querySelector('link[rel="' + rel + '"]');
+        if (!src) {
+          if (link) link.remove();
+          return;
+        }
+        if (!link) {
+          link = document.createElement("link");
+          link.rel = rel;
+          document.head.appendChild(link);
+        }
+        link.href = src;
+        if (rel === "icon") link.type = "image/png";
+      });
     }
 
     applyAdminSettings();

@@ -271,6 +271,23 @@
         : "No film uploaded. The built-in film is used. The timer uses the video length when you add one.";
     }
 
+    function setFavicon(src) {
+      ["icon", "apple-touch-icon"].forEach((rel) => {
+        let link = document.querySelector('link[rel="' + rel + '"]');
+        if (!src) {
+          if (link) link.remove();
+          return;
+        }
+        if (!link) {
+          link = document.createElement("link");
+          link.rel = rel;
+          document.head.appendChild(link);
+        }
+        link.href = src;
+        if (rel === "icon") link.type = "image/png";
+      });
+    }
+
     function showLogo(src) {
       logoData = src || "";
       const preview = document.getElementById("logo-preview");
@@ -281,6 +298,7 @@
         preview.removeAttribute("src");
         preview.classList.remove("visible");
       }
+      setFavicon(logoData);
     }
 
     function fill(data) {
@@ -494,6 +512,10 @@
       fill({ password: password });
       document.getElementById("saved").textContent = "Reset to the original film. The password was kept.";
     });
+
+    try {
+      setFavicon((JSON.parse(localStorage.getItem(KEY)) || {}).logo || "");
+    } catch (e) {}
 
     if (sessionStorage.getItem("healthy-tooth-admin") === "1") showEditor();
   </script>
