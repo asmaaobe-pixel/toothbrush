@@ -34,7 +34,7 @@
       box-shadow: 0 12px 32px rgba(28, 33, 88, 0.06);
     }
     label { display: block; margin: 14px 0 6px; font-size: 13px; color: var(--muted); }
-    input[type="text"], input[type="url"], input[type="password"], input[type="number"], textarea {
+    input[type="text"], input[type="search"], input[type="url"], input[type="password"], input[type="number"], textarea {
       width: 100%;
       border: 1px solid var(--line);
       background: #f7f8fc;
@@ -76,6 +76,30 @@
     #logo-preview.visible { display: block; }
     input[type="file"] { font: inherit; font-size: 14px; }
     .hidden { display: none; }
+    .yt-search { display: flex; gap: 8px; align-items: center; }
+    .yt-search input { flex: 1; }
+    .yt-results { display: grid; gap: 8px; margin-top: 8px; }
+    .yt-results:empty { display: none; }
+    button.yt-pick {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      padding: 6px;
+      text-align: start;
+      background: #f7f8fc;
+    }
+    button.yt-pick img {
+      width: 120px;
+      height: 68px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #d7ecf8;
+    }
+    button.yt-pick b { display: block; }
+    button.yt-pick small { color: var(--muted); }
+    button.yt-pick.selected { outline: 3px solid var(--mint); }
   </style>
 </head>
 <body>
@@ -121,8 +145,16 @@
       </div>
       <p class="note" id="film-name">No film uploaded. The built-in film is used. The timer uses the video length when you add one.</p>
 
+      <label for="youtube-query">Find a YouTube video</label>
+      <div class="yt-search">
+        <input id="youtube-query" type="search" placeholder="how to brush teeth" autocomplete="off" />
+        <button id="youtube-search" type="button">Search</button>
+      </div>
+      <p class="note">Search here, then tap a video. You do not need to open YouTube or copy a link.</p>
+      <div id="yt-results" class="yt-results"></div>
+
       <label for="youtube">YouTube link</label>
-      <input id="youtube" type="url" placeholder="https://www.youtube.com/watch?v=" />
+      <input id="youtube" type="url" placeholder="Filled when you tap a video" />
 
       <label for="logo-file">Logo</label>
       <div class="logo-row">
@@ -138,10 +170,10 @@
         <label>Purple <input id="purple" type="color" value="#7c5cff" /></label>
       </div>
 
-      <label for="english">English voice, one sentence per line</label>
+      <label for="english">English words on screen, one sentence per line</label>
       <textarea id="english"></textarea>
 
-      <label for="arabic">Arabic voice, one sentence per line</label>
+      <label for="arabic">Arabic words on screen, one sentence per line</label>
       <textarea id="arabic" dir="rtl"></textarea>
 
       <div class="actions">
@@ -156,7 +188,7 @@
     const KEY = "healthy-tooth-settings";
     const DEFAULTS = {
       title: "Brush time!",
-      lead: "Press the green Play button. A friendly voice helps you brush until the timer ends.",
+      lead: "Press the green Play button and brush until the timer ends.",
       minutes: 2,
       seconds: 0,
       youtube: "",
@@ -253,6 +285,9 @@
 
     function fill(data) {
       const values = Object.assign({}, DEFAULTS, data);
+      if (values.lead === "Press the green Play button. A friendly voice helps you brush until the timer ends.") {
+        values.lead = DEFAULTS.lead;
+      }
       ["title", "lead", "minutes", "seconds", "youtube", "navy", "green", "purple", "english", "arabic"].forEach((id) => {
         document.getElementById(id).value = values[id] == null ? "" : values[id];
       });
@@ -291,6 +326,64 @@
       document.getElementById("editor").classList.remove("hidden");
       fill(read());
     }
+
+    function showYouTubeResults(videos) {
+      const box = document.getElementById("yt-results");
+      box.textContent = "";
+      videos.forEach((item) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "yt-pick";
+        const img = document.createElement("img");
+        img.alt = "";
+        img.src = "https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg";
+        const text = document.createElement("span");
+        const title = document.createElement("b");
+        title.textContent = item.title;
+        const meta = document.createElement("small");
+        meta.textContent = [item.channel, item.length].filter(Boolean).join(" · ");
+        text.append(title, meta);
+        button.append(img, text);
+        button.addEventListener("click", () => {
+          box.querySelectorAll(".yt-pick").forEach((el) => el.classList.toggle("selected", el === button));
+          document.getElementById("youtube").value = "https://www.youtube.com/watch?v=" + item.id;
+          document.getElementById("saved").textContent = "Video chosen. Click Save.";
+        });
+        box.appendChild(button);
+      });
+    }
+
+    async function searchYouTube() {
+      const query = document.getElementById("youtube-query").value.trim();
+      const button = document.getElementById("youtube-search");
+      const note = document.getElementById("saved");
+      if (!query) {
+        note.textContent = "Type a few words, like how to brush teeth.";
+        return;
+      }
+      button.disabled = true;
+      note.textContent = "Looking for videos…";
+      try {
+        const response = await fetch("/api/youtube-search?q=" + encodeURIComponent(query));
+        const data = await response.json();
+        if (!response.ok || !Array.isArray(data.videos)) throw new Error("search");
+        showYouTubeResults(data.videos);
+        note.textContent = data.videos.length ? "Tap a video to choose it." : "No videos found. Try different words.";
+      } catch (e) {
+        document.getElementById("yt-results").textContent = "";
+        note.textContent = "Search could not load. Check your internet and try again.";
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    document.getElementById("youtube-search").addEventListener("click", searchYouTube);
+    document.getElementById("youtube-query").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        searchYouTube();
+      }
+    });
 
     document.getElementById("enter").addEventListener("click", () => {
       const saved = read();

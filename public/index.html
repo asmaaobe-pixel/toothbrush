@@ -250,7 +250,7 @@
       font-weight: 700;
       cursor: pointer;
     }
-    .controls button, .langs button, .youtube button, #clear-media {
+    .controls button, .langs button, .youtube button:not(.yt-pick), #clear-media {
       min-height: 48px;
       padding: 10px 18px;
       border-radius: 999px;
@@ -289,11 +289,21 @@
     }
     .youtube {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 8px;
       align-items: center;
     }
-    .youtube #yt-slot { grid-column: 1 / -1; margin-top: 8px; }
+    .youtube #yt-slot,
+    .yt-hint,
+    .yt-results,
+    .yt-paste { grid-column: 1 / -1; }
+    .yt-hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .yt-results { display: grid; gap: 8px; }
+    .yt-results:empty { display: none; }
     .youtube input {
       width: 100%;
       border: 1px solid var(--line);
@@ -304,17 +314,48 @@
       font: inherit;
       font-size: 14px;
     }
-    .youtube button {
+    .youtube button:not(.yt-pick) {
       border-radius: 999px;
       padding: 9px 16px;
       background: #fff;
     }
-    .youtube a {
-      color: var(--gold);
-      font-size: 13px;
-      text-decoration: none;
+    button.yt-pick {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      min-height: 0;
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--foam);
+      box-shadow: none;
+      text-align: start;
+      color: var(--ink);
     }
-    .youtube a:hover { text-decoration: underline; }
+    button.yt-pick img {
+      width: 120px;
+      height: 68px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #d7ecf8;
+    }
+    button.yt-pick b { display: block; font-size: 15px; }
+    button.yt-pick small { color: var(--muted); font-weight: 700; }
+    button.yt-pick.selected { outline: 3px solid var(--mint); }
+    .yt-paste summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .yt-paste-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      margin-top: 8px;
+    }
     .grownups {
       margin-top: 8px;
       color: var(--muted);
@@ -346,8 +387,6 @@
       color: var(--muted);
       font-size: 14px;
     }
-    .admin-link { color: var(--muted); text-decoration: none; font-weight: 800; }
-    .admin-link:hover { color: var(--gold); }
     input[type="range"] { accent-color: var(--mint); width: 128px; height: 28px; }
   </style>
 </head>
@@ -373,7 +412,7 @@
       <img id="logo" class="logo" alt="" />
       <div>
         <h1>Brush time!</h1>
-        <p class="lead">Press the green Play button. A friendly voice helps you brush until the timer ends.</p>
+        <p class="lead">Press the green Play button and brush until the timer ends.</p>
       </div>
     </header>
 
@@ -393,7 +432,7 @@
         <span class="count-elapsed"><bdi id="count-elapsed" dir="ltr">0:00</bdi> <span id="elapsed-word">elapsed</span></span>
       </div>
       <div class="bar" aria-hidden="true"><span id="fill"></span></div>
-      <p class="caption" id="caption">Press Play. A friendly voice will help you brush.</p>
+      <p class="caption" id="caption">Press Play and brush until the timer ends.</p>
 
       <div class="toolbar">
         <div class="controls">
@@ -413,10 +452,18 @@
       <details class="grownups">
         <summary id="grownups-label">For grown-ups</summary>
       <div class="youtube">
-        <input id="youtube-url" type="url" placeholder="Paste a YouTube link" autocomplete="off" />
-        <button id="youtube-use" type="button">Add below</button>
-        <a id="youtube-find" href="https://www.youtube.com/results?search_query=how+to+brush+teeth" target="_blank" rel="noopener">Find on YouTube</a>
+        <input id="youtube-query" type="search" placeholder="Search for a video, like how to brush teeth" autocomplete="off" />
+        <button id="youtube-search" type="button">Search</button>
+        <p class="yt-hint" id="youtube-hint">Tap a video to play it here.</p>
+        <div id="yt-results" class="yt-results"></div>
         <div id="yt-slot"></div>
+        <details class="yt-paste">
+          <summary id="youtube-have-link">I already have a link</summary>
+          <div class="yt-paste-row">
+            <input id="youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=" autocomplete="off" />
+            <button id="youtube-use" type="button">Add below</button>
+          </div>
+        </details>
       </div>
 
       <div class="attach">
@@ -430,9 +477,8 @@
       </div>
 
       <p class="foot">
-        <span class="files" id="files">Built-in film. Built-in toothbrush voice.</span>
+        <span class="files" id="files">Built-in film.</span>
         <span class="status" id="status">Ready. Length is 2:00.</span>
-        <a class="admin-link" href="admin.html">Admin</a>
       </p>
       </details>
     </section>
@@ -497,7 +543,6 @@
     let elapsed = 0;
     let playing = false;
     let lastTick = 0;
-    let lineIndex = 0;
     let usingAudioFile = false;
     let usingVideoFile = false;
     let usingYouTube = false;
@@ -507,7 +552,6 @@
     let videoUrl = "";
     let audioUrl = "";
     let raf = 0;
-    let keepAlive = 0;
 
     function fmt(seconds) {
       const s = Math.min(DURATION, Math.max(0, Math.floor(seconds)));
@@ -526,7 +570,7 @@
     const UI = {
       en: {
         title: "Brush time!",
-        lead: "Press the green Play button. A friendly voice helps you brush until the timer ends.",
+        lead: "Press the green Play button and brush until the timer ends.",
         timeLeft: "time left",
         elapsed: "elapsed",
         play: "Play",
@@ -534,6 +578,14 @@
         restart: "Restart",
         sound: "Sound",
         grownups: "For grown-ups",
+        searchPlaceholder: "Search for a video, like how to brush teeth",
+        search: "Search",
+        searchHint: "Tap a video to play it here.",
+        haveLink: "I already have a link",
+        searchNeed: "Type a few words, like how to brush teeth.",
+        searching: "Looking for videos…",
+        searchEmpty: "No videos found. Try different words.",
+        searchFail: "Search could not load. Check your internet and try again.",
         ready: "Ready!",
         brushing: "Brushing!",
         done: "All done!",
@@ -545,7 +597,7 @@
       },
       ar: {
         title: "وقت التفريش!",
-        lead: "اضغط زر ابدأ الأخضر. صوت لطيف يساعدك حتى ينتهي المؤقت.",
+        lead: "اضغط زر ابدأ الأخضر وفرش حتى ينتهي المؤقت.",
         timeLeft: "الوقت المتبقي",
         elapsed: "مضى",
         play: "ابدأ",
@@ -553,6 +605,14 @@
         restart: "من جديد",
         sound: "الصوت",
         grownups: "للكبار",
+        searchPlaceholder: "ابحث عن فيديو، مثل كيف أفرش أسناني",
+        search: "بحث",
+        searchHint: "اضغط فيديو لتشغيله هنا.",
+        haveLink: "عندي رابط جاهز",
+        searchNeed: "اكتب كلمات، مثل كيف أفرش أسناني.",
+        searching: "نبحث عن فيديوهات…",
+        searchEmpty: "ما لقينا فيديو. جرّب كلمات ثانية.",
+        searchFail: "البحث ما اشتغل. تأكد من الإنترنت وحاول مرة ثانية.",
         ready: "جاهز!",
         brushing: "نفرش!",
         done: "أحسنت!",
@@ -584,6 +644,10 @@
       document.getElementById("restart").textContent = copy.restart;
       document.getElementById("sound-label").textContent = copy.sound;
       document.getElementById("grownups-label").textContent = copy.grownups;
+      document.getElementById("youtube-query").placeholder = copy.searchPlaceholder;
+      document.getElementById("youtube-search").textContent = copy.search;
+      document.getElementById("youtube-hint").textContent = copy.searchHint;
+      document.getElementById("youtube-have-link").textContent = copy.haveLink;
     }
 
     function renderHud() {
@@ -596,36 +660,6 @@
       if (!usingAudioFile) caption.textContent = currentLine();
       badge.textContent = playing ? copy.brushing : (elapsed >= DURATION ? copy.done : copy.ready);
       badge.classList.toggle("live", playing);
-    }
-
-    function pickVoice() {
-      const voices = speechSynthesis.getVoices();
-      const prefix = lang === "ar" ? "ar" : "en";
-      return (
-        voices.find((v) => v.lang.toLowerCase().startsWith(prefix)) ||
-        voices.find((v) => v.lang.toLowerCase().startsWith("en")) ||
-        voices[0] ||
-        null
-      );
-    }
-
-    function stopSpeech() {
-      speechSynthesis.cancel();
-    }
-
-    function speakFrom(index) {
-      if (usingAudioFile) return;
-      stopSpeech();
-      const lines = LINES[lang].slice(index);
-      const voiceName = pickVoice();
-      lines.forEach((text) => {
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = lang === "ar" ? "ar" : "en-US";
-        utter.rate = 0.92;
-        utter.volume = Number(volume.value);
-        if (voiceName) utter.voice = voiceName;
-        speechSynthesis.speak(utter);
-      });
     }
 
     function drawTooth(x, y, w, h, smile) {
@@ -776,12 +810,6 @@
       return ytApiPromise;
     }
 
-    function silenceYouTube(player) {
-      const target = player || ytPlayer;
-      if (!target || !target.mute) return;
-      target.mute();
-    }
-
     function hideYouTube() {
       usingYouTube = false;
       document.getElementById("yt-slot").classList.remove("visible");
@@ -812,16 +840,20 @@
       raf = requestAnimationFrame(frame);
     }
 
+    function stopPlayback() {
+      voice.pause();
+      if (usingVideoFile) video.pause();
+      if (usingYouTube && ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
+    }
+
     function finish() {
       playing = false;
       elapsed = DURATION;
       cancelAnimationFrame(raf);
-      clearInterval(keepAlive);
-      voice.pause();
-      stopSpeech();
+      stopPlayback();
       renderHud();
       status.textContent = usingYouTube || usingVideoFile
-        ? ui().done + " Your video was left as it is."
+        ? ui().done + " The video stopped."
         : ui().finished + fmt(DURATION) + ".";
     }
 
@@ -830,33 +862,19 @@
       playing = true;
       lastTick = 0;
       status.textContent = usingYouTube
-        ? ui().keep + " The YouTube video stays quiet."
+        ? ui().keep + " The YouTube video keeps its own sound."
         : (usingVideoFile ? ui().keep + " Your video keeps its own picture and sound." : ui().keep);
       renderHud();
 
-      if (usingYouTube) silenceYouTube();
       if (usingVideoFile) video.muted = false;
       else draw();
 
       if (usingAudioFile) {
-        stopSpeech();
         voice.currentTime = Math.min(elapsed, voice.duration || elapsed);
         voice.volume = Number(volume.value);
         voice.play().catch(() => {
           status.textContent = "The sound file could not play. Press play again.";
         });
-      } else {
-        const lines = LINES[lang];
-        const slot = DURATION / lines.length;
-        lineIndex = Math.min(lines.length - 1, Math.floor(elapsed / slot));
-        speakFrom(lineIndex);
-        clearInterval(keepAlive);
-        keepAlive = setInterval(() => {
-          if (playing && speechSynthesis.speaking) {
-            speechSynthesis.pause();
-            speechSynthesis.resume();
-          }
-        }, 10000);
       }
 
       cancelAnimationFrame(raf);
@@ -866,10 +884,8 @@
     function pause() {
       playing = false;
       cancelAnimationFrame(raf);
-      clearInterval(keepAlive);
       lastTick = 0;
       voice.pause();
-      stopSpeech();
       renderHud();
       status.textContent = ui().paused;
     }
@@ -885,8 +901,8 @@
 
     function describeFiles() {
       const v = usingVideoFile ? "Your video is attached." : "Built-in film.";
-      const y = usingYouTube ? " YouTube is under the link." : "";
-      const a = usingAudioFile ? " Your sound is attached." : " Built-in toothbrush voice.";
+      const y = usingYouTube ? " A YouTube video is selected." : "";
+      const a = usingAudioFile ? " Your sound is attached." : "";
       files.textContent = v + y + a;
     }
 
@@ -909,19 +925,14 @@
       else if (!playing) status.textContent = ui().paused;
       else if (!usingYouTube && !usingVideoFile) status.textContent = ui().keep;
       if (!usingVideoFile) draw();
-      if (playing && !usingAudioFile) {
-        const lines = LINES[lang];
-        const slot = DURATION / lines.length;
-        speakFrom(Math.min(lines.length - 1, Math.floor(elapsed / slot)));
-      }
     }
 
     volume.addEventListener("input", () => {
       voice.volume = Number(volume.value);
     });
 
-    async function useYouTube() {
-      const id = youtubeIdFrom(document.getElementById("youtube-url").value);
+    async function useYouTube(pickedId) {
+      const id = typeof pickedId === "string" ? pickedId : youtubeIdFrom(document.getElementById("youtube-url").value);
       if (!id) {
         status.textContent = "Paste a YouTube link, like https://www.youtube.com/watch?v=...";
         return;
@@ -953,13 +964,6 @@
           },
           events: {
             onReady: (event) => {
-              const mark = () => {
-                silenceYouTube(event.target);
-                const slot = document.getElementById("yt-slot");
-                if (slot) slot.dataset.muted = String(!!(event.target.isMuted && event.target.isMuted()));
-              };
-              mark();
-              setTimeout(mark, 400);
               const takeTime = () => {
                 if (!usingVideoFile) applyVideoDuration(event.target.getDuration());
               };
@@ -967,33 +971,87 @@
               setTimeout(takeTime, 600);
               describeFiles();
               renderHud();
-              status.textContent = "YouTube is under the link with its sound off. Press Play for the voice.";
+              status.textContent = "The video is below. Use its play button to hear it.";
             },
             onStateChange: (event) => {
-              if (event.data === YT.PlayerState.PLAYING) {
-                silenceYouTube(event.target);
-                document.getElementById("yt-slot").dataset.muted = String(event.target.isMuted && event.target.isMuted());
-                if (!usingVideoFile) applyVideoDuration(event.target.getDuration());
+              if (event.data === YT.PlayerState.PLAYING && !usingVideoFile) {
+                applyVideoDuration(event.target.getDuration());
               }
             },
             onError: () => {
-              status.textContent = "YouTube could not play that video. Try another link.";
+              status.textContent = "YouTube could not play that video. Try another one.";
             }
           }
         });
       } else {
         ytPlayer.cueVideoById(id);
-        silenceYouTube();
         setTimeout(() => {
           if (!usingVideoFile && ytPlayer.getDuration) applyVideoDuration(ytPlayer.getDuration());
         }, 800);
         describeFiles();
         renderHud();
-        status.textContent = "YouTube is under the link with its sound off. Press Play for the voice.";
+        status.textContent = "The video is below. Use its play button to hear it.";
       }
     }
 
-    document.getElementById("youtube-use").addEventListener("click", useYouTube);
+    function showYouTubeResults(videos) {
+      const box = document.getElementById("yt-results");
+      box.textContent = "";
+      videos.forEach((item) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "yt-pick";
+        button.dataset.id = item.id;
+        const img = document.createElement("img");
+        img.alt = "";
+        img.src = "https://i.ytimg.com/vi/" + item.id + "/hqdefault.jpg";
+        const text = document.createElement("span");
+        const title = document.createElement("b");
+        title.textContent = item.title;
+        const meta = document.createElement("small");
+        meta.textContent = [item.channel, item.length].filter(Boolean).join(" · ");
+        text.append(title, meta);
+        button.append(img, text);
+        button.addEventListener("click", () => {
+          box.querySelectorAll(".yt-pick").forEach((el) => el.classList.toggle("selected", el === button));
+          document.getElementById("youtube-url").value = "https://www.youtube.com/watch?v=" + item.id;
+          useYouTube(item.id);
+        });
+        box.appendChild(button);
+      });
+    }
+
+    async function searchYouTube() {
+      const query = document.getElementById("youtube-query").value.trim();
+      const button = document.getElementById("youtube-search");
+      if (!query) {
+        status.textContent = ui().searchNeed;
+        return;
+      }
+      button.disabled = true;
+      status.textContent = ui().searching;
+      try {
+        const response = await fetch("/api/youtube-search?q=" + encodeURIComponent(query));
+        const data = await response.json();
+        if (!response.ok || !Array.isArray(data.videos)) throw new Error("search");
+        showYouTubeResults(data.videos);
+        status.textContent = data.videos.length ? ui().searchHint : ui().searchEmpty;
+      } catch (e) {
+        document.getElementById("yt-results").textContent = "";
+        status.textContent = ui().searchFail;
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    document.getElementById("youtube-search").addEventListener("click", searchYouTube);
+    document.getElementById("youtube-query").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        searchYouTube();
+      }
+    });
+    document.getElementById("youtube-use").addEventListener("click", () => useYouTube());
     document.getElementById("youtube-url").addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
@@ -1011,12 +1069,23 @@
       stage.classList.add("has-video");
       video.muted = false;
       describeFiles();
-      status.textContent = "Video attached: " + file.name + ". The timer will match this video.";
+      status.textContent = "Video attached: " + file.name + ". The timer will not go past the set time.";
     });
 
     function applyVideoDuration(seconds) {
       if (!Number.isFinite(seconds) || seconds < 1) return;
-      const next = Math.min(3600, Math.round(seconds));
+      const length = Math.round(seconds);
+      if (length > baseDuration) {
+        if (DURATION !== baseDuration) {
+          DURATION = baseDuration;
+          if (!playing) elapsed = 0;
+          if (elapsed > DURATION) elapsed = DURATION;
+          renderHud();
+        }
+        if (!playing) status.textContent = "The timer stays at " + fmt(baseDuration) + ". The video stops when that time ends.";
+        return;
+      }
+      const next = Math.max(15, length);
       if (next === DURATION) return;
       DURATION = next;
       if (!playing) elapsed = 0;
@@ -1036,7 +1105,6 @@
       audioUrl = URL.createObjectURL(file);
       voice.src = audioUrl;
       usingAudioFile = true;
-      stopSpeech();
       describeFiles();
       caption.textContent = "Your sound will play with the video for " + fmt(DURATION) + ".";
       status.textContent = "Sound attached: " + file.name + ". Press play.";
@@ -1099,7 +1167,7 @@
         document.title = saved.title;
         if (saved.title !== UI.en.title) h1.dataset.custom = "1";
       }
-      if (saved.lead) {
+      if (saved.lead && saved.lead !== "Press the green Play button. A friendly voice helps you brush until the timer ends.") {
         const lead = document.querySelector(".lead");
         lead.textContent = saved.lead;
         if (saved.lead !== UI.en.lead) lead.dataset.custom = "1";
@@ -1129,7 +1197,6 @@
       status.textContent = ui().readyStatus + fmt(DURATION) + ".";
     }
 
-    speechSynthesis.addEventListener?.("voiceschanged", () => {});
     applyAdminSettings();
     renderHud();
     draw();
